@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ResoReply — Relationship Copilot</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0A0A0D;color:#E0DDD6;min-height:100vh;display:flex;justify-content:center;padding:2rem 1rem}
+.app{width:100%;max-width:660px}
+
+/* HEADER */
+.header{margin-bottom:1.5rem}
+.logo-row{display:flex;align-items:baseline;gap:.6rem;margin-bottom:.3rem}
+.logo{font-size:22px;font-weight:500;color:#E0DDD6;letter-spacing:-.5px}
+.logo-sub{font-size:12px;color:#534AB7;font-weight:400}
+.tagline{font-size:13px;color:#444;line-height:1.6}
+.tagline b{color:#888}
+
+/* CARDS */
+.card{background:#13131A;border:1px solid #252530;border-radius:12px;padding:1.25rem;margin-bottom:.75rem}
+.card-v{background:#0F0D1E;border-color:#3A3478}
+.card-o{background:#160F08;border-color:#5C3A1A}
+.card-g{background:#0A160F;border-color:#1A5C38}
+.sec{font-size:10px;font-weight:600;color:#444;letter-spacing:1px;margin-bottom:.75rem;text-transform:uppercase}
+.sec-v{color:#7F77DD}.sec-o{color:#D4810A}.sec-g{color:#1D9E75}
+
+/* INPUT AREA */
+.input-label{font-size:12px;color:#555;margin-bottom:.5rem}
+.msg-input{width:100%;padding:.9rem 1rem;font-size:14px;border:1px solid #252530;border-radius:8px;background:#0D0B1C;color:#E0DDD6;outline:none;resize:vertical;min-height:100px;font-family:inherit;line-height:1.65;transition:border-color .2s}
+.msg-input:focus{border-color:#534AB7}
+.msg-input::placeholder{color:#2A2A35}
+
+/* GOAL SELECTOR */
+.goal-wrap{display:flex;flex-wrap:wrap;gap:7px;margin:.75rem 0}
+.goal-btn{padding:5px 12px;border-radius:20px;border:1px solid #252530;background:transparent;color:#555;font-size:12px;cursor:pointer;transition:all .15s}
+.goal-btn:hover{border-color:#534AB7;color:#A8A49C}
+.goal-btn.active{background:#1A1830;border-color:#7F77DD;color:#9A97DD}
+
+/* CONTEXT FIELDS */
+.ctx-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:.75rem 0}
+.ctx-select{width:100%;padding:.55rem .8rem;font-size:12px;border:1px solid #252530;border-radius:8px;background:#0D0B1C;color:#888;outline:none;cursor:pointer}
+.ctx-select:focus{border-color:#534AB7}
+
+/* ANALYZE BUTTON */
+.analyze-btn{width:100%;padding:.8rem;font-size:14px;font-weight:500;background:#534AB7;color:#fff;border:none;border-radius:8px;cursor:pointer;transition:all .2s;margin-top:.5rem}
+.analyze-btn:hover:not(:disabled){opacity:.85}
+.analyze-btn:disabled{opacity:.3;cursor:not-allowed}
+.analyze-btn.loading{background:#3A3478}
+
+/* ANALYSIS PANEL */
+.analysis-panel{display:none}
+
+/* EMOTION METER */
+.meter-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:.75rem}
+.meter{background:#0E0E14;border-radius:8px;padding:.65rem .9rem;border:1px solid #1E1E28}
+.meter-label{font-size:10px;color:#444;letter-spacing:.5px;text-transform:uppercase;margin-bottom:4px}
+.meter-val{font-size:20px;font-weight:500}
+.meter-val.red{color:#D4534A}
+.meter-val.orange{color:#D4810A}
+.meter-val.green{color:#1D9E75}
+.meter-val.purple{color:#7F77DD}
+.meter-bar{height:3px;border-radius:2px;margin-top:5px;background:#1A1A20;overflow:hidden}
+.meter-fill{height:100%;border-radius:2px;transition:width .8s ease}
+
+/* ORIGINAL MSG ANALYSIS */
+.orig-box{background:#1A0A0A;border:1px solid #401414;border-radius:8px;padding:.9rem 1rem;margin-bottom:.75rem}
+.orig-label{font-size:10px;color:#D4534A;letter-spacing:.5px;text-transform:uppercase;margin-bottom:.5rem}
+.orig-txt{font-size:13px;color:#C87070;line-height:1.65;font-style:italic}
+.reaction-row{display:flex;gap:6px;margin-top:.65rem;flex-wrap:wrap}
+.reaction-badge{font-size:11px;padding:3px 9px;border-radius:12px;background:#200A0A;border:1px solid #401414;color:#C87070}
+
+/* REWRITE CARDS */
+.rewrite-list{display:flex;flex-direction:column;gap:.75rem}
+.rw-card{border-radius:10px;padding:1rem;cursor:pointer;transition:all .2s;position:relative}
+.rw-card.tone-soft{background:#0D0B1C;border:1px solid #3A3478}
+.rw-card.tone-firm{background:#100A00;border:1px solid #362000}
+.rw-card.tone-honest{background:#0A160F;border:1px solid #1A5C38}
+.rw-card:hover{transform:translateY(-1px)}
+.rw-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:.6rem}
+.rw-tone{font-size:10px;font-weight:600;letter-spacing:.5px;text-transform:uppercase}
+.tone-soft .rw-tone{color:#7F77DD}
+.tone-firm .rw-tone{color:#D4810A}
+.tone-honest .rw-tone{color:#1D9E75}
+.rw-badges{display:flex;gap:5px}
+.rw-badge{font-size:10px;padding:2px 7px;border-radius:8px}
+.tone-soft .rw-badge{background:#1A1830;color:#7F77DD}
+.tone-firm .rw-badge{background:#180F00;color:#D4810A}
+.tone-honest .rw-badge{background:#061209;color:#1D9E75}
+.rw-txt{font-size:13px;line-height:1.7;margin-bottom:.75rem}
+.tone-soft .rw-txt{color:#9A97DD}
+.tone-firm .rw-txt{color:#C8A070}
+.tone-honest .rw-txt{color:#70C8A0}
+.rw-metrics{display:flex;gap:10px;flex-wrap:wrap}
+.rw-metric{font-size:11px;color:#444}
+.rw-metric b{color:#888;font-weight:500}
+.copy-btn{position:absolute;top:.9rem;right:.9rem;font-size:10px;color:#333;background:transparent;border:1px solid #252530;border-radius:5px;padding:3px 8px;cursor:pointer;transition:all .15s}
+.copy-btn:hover{border-color:#534AB7;color:#7F77DD}
+.copy-btn.copied{color:#1D9E75;border-color:#1D9E75}
+
+/* SIMULATION */
+.sim-row{display:flex;gap:8px;margin-bottom:.5rem;align-items:center}
+.sim-scenario{font-size:12px;color:#666;flex:1;line-height:1.4}
+.sim-bars{display:flex;flex-direction:column;gap:3px;width:180px;flex-shrink:0}
+.sim-bar-row{display:flex;align-items:center;gap:6px;font-size:10px;color:#444}
+.sim-bw{flex:1;height:3px;background:#1A1A20;border-radius:2px;overflow:hidden}
+.sim-bb{height:100%;border-radius:2px}
+
+/* LOADING */
+.loading-wrap{text-align:center;padding:2rem;display:none}
+.loading-txt{font-size:13px;color:#444;margin-top:.75rem}
+.spinner{width:28px;height:28px;border:2px solid #1A1A20;border-top-color:#534AB7;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ERROR */
+.error-box{background:#160A0A;border:1px solid #401414;border-radius:8px;padding:.9rem;font-size:13px;color:#C87070;display:none}
+
+/* HISTORY */
+.history-item{display:flex;align-items:flex-start;gap:10px;padding:.6rem .9rem;background:#0A0A0D;border-radius:8px;margin-bottom:.5rem;border:1px solid #1A1A20;cursor:pointer;transition:all .15s}
+.history-item:hover{border-color:#3A3478}
+.hist-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;margin-top:5px}
+.hist-txt{font-size:12px;color:#555;line-height:1.5;flex:1}
+.hist-goal{font-size:10px;color:#534AB7;margin-top:2px}
+
+/* RESOSYNC LINK */
+.reso-link{text-align:center;padding:.9rem;font-size:12px;color:#444;border-top:1px solid #1A1A20;margin-top:.5rem}
+.reso-link a{color:#534AB7;text-decoration:none}
+.reso-link a:hover{color:#7F77DD}
+</style>
+</head>
+<body>
+<div class="app">
+
+<div class="header">
+  <div class="logo-row">
+    <span class="logo">ResoReply</span>
+    <span class="logo-sub">by ResoSync</span>
+  </div>
+  <div class="tagline">문장을 고치는 게 아닙니다. <b>관계의 결과를 설계합니다.</b></div>
+</div>
+
+<!-- INPUT CARD -->
+<div class="card">
+  <div class="sec">메시지 입력</div>
+  <div class="input-label">보내려는 메시지를 입력하세요</div>
+  <textarea class="msg-input" id="msg-input" placeholder="why you ask me for help without money? are you crazy?&#10;&#10;또는 한국어로:&#10;내가 도와달라고 했을 때는 뭐라고 했잖아, 그건 생각 안 해?"></textarea>
+
+  <div class="sec" style="margin-top:.9rem">목표 선택</div>
+  <div class="goal-wrap" id="goal-wrap">
+    <button class="goal-btn active" data-goal="관계 유지" onclick="setGoal(this)">관계 유지</button>
+    <button class="goal-btn" data-goal="화해 시도" onclick="setGoal(this)">화해 시도</button>
+    <button class="goal-btn" data-goal="협업 지속" onclick="setGoal(this)">협업 지속</button>
+    <button class="goal-btn" data-goal="정중한 거절" onclick="setGoal(this)">정중한 거절</button>
+    <button class="goal-btn" data-goal="감정 표현" onclick="setGoal(this)">감정 표현</button>
+    <button class="goal-btn" data-goal="경계 설정" onclick="setGoal(this)">경계 설정</button>
+    <button class="goal-btn" data-goal="설득" onclick="setGoal(this)">설득</button>
+    <button class="goal-btn" data-goal="연인 관계 회복" onclick="setGoal(this)">연인 관계 회복</button>
+  </div>
+
+  <div class="ctx-grid">
+    <select class="ctx-select" id="ctx-rel">
+      <option value="친구">관계: 친구</option>
+      <option value="연인">관계: 연인</option>
+      <option value="직장 동료">관계: 직장 동료</option>
+      <option value="가족">관계: 가족</option>
+      <option value="비즈니스 파트너">관계: 비즈니스 파트너</option>
+      <option value="지인">관계: 지인</option>
+    </select>
+    <select class="ctx-select" id="ctx-lang">
+      <option value="한국어">출력: 한국어</option>
+      <option value="영어">출력: English</option>
+      <option value="둘 다">출력: 한국어 + English</option>
+    </select>
+  </div>
+
+  <button class="analyze-btn" id="analyze-btn" onclick="analyze()">
+    관계 분석 + 대안 생성
+  </button>
+</div>
+
+<!-- LOADING -->
+<div class="loading-wrap" id="loading-wrap">
+  <div class="spinner"></div>
+  <div class="loading-txt" id="loading-txt">메시지 감정 분석 중...</div>
+</div>
+
+<!-- ERROR -->
+<div class="error-box" id="error-box"></div>
+
+<!-- ANALYSIS PANEL -->
+<div class="analysis-panel" id="analysis-panel">
+
+  <!-- Original Analysis -->
+  <div class="card card-o">
+    <div class="sec sec-o">[1] 원본 메시지 분석</div>
+    <div class="orig-box">
+      <div class="orig-label">원본 메시지</div>
+      <div class="orig-txt" id="orig-display"></div>
+      <div class="reaction-row" id="reaction-row"></div>
+    </div>
+    <div class="meter-grid" id="meter-grid"></div>
+  </div>
+
+  <!-- Rewrites -->
+  <div class="card">
+    <div class="sec sec-v">[2] AI 재구성 — 목표: <span id="goal-display"></span></div>
+    <div class="rewrite-list" id="rewrite-list"></div>
+  </div>
+
+  <!-- Simulation -->
+  <div class="card card-v">
+    <div class="sec sec-v">[3] 관계 시뮬레이션 — 선택에 따른 예상 결과</div>
+    <p style="font-size:12px;color:#444;margin-bottom:.75rem">각 버전을 전송했을 때 예상되는 상대방의 반응입니다.</p>
+    <div id="sim-wrap"></div>
+  </div>
+
+  <!-- Insight -->
+  <div class="card card-g">
+    <div class="sec sec-g">[4] Relationship Intelligence — 패턴 인사이트</div>
+    <div id="insight-wrap"></div>
+  </div>
+
+</div>
+
+<!-- HISTORY -->
+<div class="card" id="history-card" style="display:none">
+  <div class="sec">최근 분석 히스토리</div>
+  <div id="history-list"></div>
+</div>
+
+<div class="reso-link">
+  ResoReply는 <a href="index.html">ResoSync</a>의 Relationship Copilot 기능입니다
+</div>
+
+</div><!-- app -->
+
+<script>
+let currentGoal='관계 유지';
+let analysisHistory=[];
+let isLoading=false;
+
+function setGoal(btn){
+  document.querySelectorAll('.goal-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  currentGoal=btn.dataset.goal;
+}
+
+function setLoading(on,txt){
+  isLoading=on;
+  document.getElementById('loading-wrap').style.display=on?'block':'none';
+  document.getElementById('loading-txt').textContent=txt||'분석 중...';
+  document.getElementById('analyze-btn').disabled=on;
+  document.getElementById('analyze-btn').classList.toggle('loading',on);
+  if(on) document.getElementById('analysis-panel').style.display='none';
+  if(on) document.getElementById('error-box').style.display='none';
+}
+
+function showError(msg){
+  const el=document.getElementById('error-box');
+  el.textContent='⚠ '+msg;
+  el.style.display='block';
+}
+
+async function analyze(){
+  const msg=document.getElementById('msg-input').value.trim();
+  if(!msg){alert('메시지를 입력해주세요.');return;}
+  if(isLoading)return;
+
+  const rel=document.getElementById('ctx-rel').value;
+  const lang=document.getElementById('ctx-lang').value;
+
+  setLoading(true,'메시지 감정 분석 중...');
+
+  const loadingSteps=['메시지 감정 분석 중...','관계 위험도 계산 중...','대안 메시지 생성 중...','관계 시뮬레이션 실행 중...'];
+  let step=0;
+  const stepInterval=setInterval(()=>{
+    step=(step+1)%loadingSteps.length;
+    document.getElementById('loading-txt').textContent=loadingSteps[step];
+  },1200);
+
+  const systemPrompt=`당신은 ResoSync의 Relationship Intelligence AI입니다.
+반드시 유효한 JSON만 응답하세요. 마크다운 코드블록 없이 순수 JSON만 출력하세요.
+
+응답 형식:
+{
+  "analysis": {
+    "emotion_intensity": 숫자,
+    "defensiveness": 숫자,
+    "relationship_risk": 숫자,
+    "empathy_score": 숫자,
+    "predicted_reactions": ["반응1","반응2","반응3"]
+  },
+  "rewrites": [
+    {"tone":"부드럽게","tone_en":"soft","message":"재구성 메시지","conflict_reduction":숫자,"relationship_maintain":숫자,"goal_achievement":숫자},
+    {"tone":"단호하게","tone_en":"firm","message":"재구성 메시지","conflict_reduction":숫자,"relationship_maintain":숫자,"goal_achievement":숫자},
+    {"tone":"솔직하게","tone_en":"honest","message":"재구성 메시지","conflict_reduction":숫자,"relationship_maintain":숫자,"goal_achievement":숫자}
+  ],
+  "simulation": {
+    "original": {"defensive_reaction":숫자,"conversation_end":숫자,"reconnect":숫자},
+    "soft": {"defensive_reaction":숫자,"conversation_continue":숫자,"relationship_recovery":숫자},
+    "firm": {"defensive_reaction":숫자,"conversation_continue":숫자,"relationship_recovery":숫자},
+    "honest": {"defensive_reaction":숫자,"conversation_continue":숫자,"relationship_recovery":숫자}
+  },
+  "insight": {
+    "pattern": "2문장 이내 패턴 설명",
+    "lost_self": "1문장 억압된 욕구",
+    "recommendation": "1문장 추천 행동"
+  }
+}
+
+모든 숫자는 0~100 정수. 문자열 내 따옴표나 줄바꿈 금지.`;
+
+  const userPrompt=`원본: "${msg}"
+관계: ${rel} | 목표: ${currentGoal} | 출력언어: ${lang}
+
+분석 후 JSON 응답. message 필드는 ${lang==='영어'?'영어로':lang==='둘 다'?'한국어와 영어 모두':'한국어로'} 작성.`;
+
+  try{
+    const response=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-6',
+        max_tokens:2000,
+        system:systemPrompt,
+        messages:[{role:'user',content:userPrompt}]
+      })
+    });
+
+    clearInterval(stepInterval);
+
+    if(!response.ok){
+      const err=await response.json().catch(()=>({}));
+      throw new Error(err.error?.message||'API 오류 ('+response.status+')');
+    }
+
+    const data=await response.json();
+    const raw=data.content?.[0]?.text||'';
+
+    // Robust JSON extraction — find the outermost { } block
+    let parsed;
+    try{
+      // First try: direct parse after stripping markdown fences
+      const clean=raw.replace(/```json\s*/g,'').replace(/```\s*/g,'').trim();
+      parsed=JSON.parse(clean);
+    }catch(e1){
+      try{
+        // Second try: extract JSON object via regex
+        const match=raw.match(/\{[\s\S]*\}/);
+        if(!match)throw new Error('JSON 블록을 찾을 수 없습니다');
+        parsed=JSON.parse(match[0]);
+      }catch(e2){
+        // Third try: fix common issues — trailing commas, unescaped quotes in strings
+        try{
+          const match2=raw.match(/\{[\s\S]*\}/);
+          if(!match2)throw new Error('복구 불가');
+          let fixable=match2[0]
+            .replace(/,\s*([}\]])/g,'$1')   // trailing commas
+            .replace(/\n/g,' ')              // newlines inside strings
+            .replace(/\t/g,' ');             // tabs
+          parsed=JSON.parse(fixable);
+        }catch(e3){
+          throw new Error('AI 응답 파싱 실패. 다시 시도해주세요. ('+e1.message+')');
+        }
+      }
+    }
+
+    setLoading(false);
+    renderAnalysis(msg,parsed);
+    addHistory(msg,currentGoal,parsed);
+
+  }catch(err){
+    clearInterval(stepInterval);
+    setLoading(false);
+    showError(err.message||'분석 중 오류가 발생했습니다. 다시 시도해주세요.');
+  }
+}
+
+function renderAnalysis(origMsg,data){
+  const panel=document.getElementById('analysis-panel');
+  panel.style.display='block';
+
+  // Original display
+  document.getElementById('orig-display').textContent=origMsg;
+  document.getElementById('goal-display').textContent=currentGoal;
+
+  // Reaction badges
+  const reactions=data.analysis.predicted_reactions||[];
+  document.getElementById('reaction-row').innerHTML=reactions.map(r=>'<span class="reaction-badge">'+r+'</span>').join('');
+
+  // Meters
+  const a=data.analysis;
+  const meters=[
+    {label:'감정 강도',val:a.emotion_intensity,cls:a.emotion_intensity>70?'red':a.emotion_intensity>40?'orange':'green',col:a.emotion_intensity>70?'#D4534A':a.emotion_intensity>40?'#D4810A':'#1D9E75'},
+    {label:'방어성',val:a.defensiveness,cls:a.defensiveness>70?'red':a.defensiveness>40?'orange':'green',col:a.defensiveness>70?'#D4534A':a.defensiveness>40?'#D4810A':'#1D9E75'},
+    {label:'관계 손상 위험',val:a.relationship_risk,cls:a.relationship_risk>70?'red':a.relationship_risk>40?'orange':'green',col:a.relationship_risk>70?'#D4534A':a.relationship_risk>40?'#D4810A':'#1D9E75'},
+    {label:'공감 점수',val:a.empathy_score,cls:a.empathy_score>60?'green':a.empathy_score>30?'orange':'red',col:a.empathy_score>60?'#1D9E75':a.empathy_score>30?'#D4810A':'#D4534A'}
+  ];
+  document.getElementById('meter-grid').innerHTML=meters.map(m=>`
+    <div class="meter">
+      <div class="meter-label">${m.label}</div>
+      <div class="meter-val ${m.cls}">${m.val}<span style="font-size:12px;font-weight:400;color:#444">%</span></div>
+      <div class="meter-bar"><div class="meter-fill" style="width:${m.val}%;background:${m.col}"></div></div>
+    </div>`).join('');
+
+  // Rewrites
+  const toneClass=['tone-soft','tone-firm','tone-honest'];
+  const toneKeys=['soft','firm','honest'];
+  document.getElementById('rewrite-list').innerHTML=(data.rewrites||[]).map((rw,i)=>`
+    <div class="rw-card ${toneClass[i]}" id="rw-${i}">
+      <button class="copy-btn" onclick="copyMsg(${i},'${escQ(rw.message)}')">복사</button>
+      <div class="rw-hdr">
+        <div class="rw-tone">Option ${i+1} — ${rw.tone}</div>
+        <div class="rw-badges">
+          <span class="rw-badge">갈등감소 ${rw.conflict_reduction}%</span>
+          <span class="rw-badge">관계유지 ${rw.relationship_maintain}%</span>
+        </div>
+      </div>
+      <div class="rw-txt">${rw.message.replace(/\n/g,'<br>')}</div>
+      <div class="rw-metrics">
+        <span class="rw-metric">목표달성 <b>${rw.goal_achievement}%</b></span>
+      </div>
+    </div>`).join('');
+
+  // Simulation
+  const sim=data.simulation||{};
+  const simRows=[
+    {label:'원본 전송',key:'original',cols:['방어적 반응','대화 종료','재연락'],vals:[sim.original?.defensive_reaction,sim.original?.conversation_end,sim.original?.reconnect],barCols:['#D4534A','#D4810A','#1D9E75']},
+    {label:'Option 1 (부드럽게)',key:'soft',cols:['방어적 반응','대화 지속','관계 회복'],vals:[sim.soft?.defensive_reaction,sim.soft?.conversation_continue,sim.soft?.relationship_recovery],barCols:['#D4534A','#7F77DD','#1D9E75']},
+    {label:'Option 2 (단호하게)',key:'firm',cols:['방어적 반응','대화 지속','관계 회복'],vals:[sim.firm?.defensive_reaction,sim.firm?.conversation_continue,sim.firm?.relationship_recovery],barCols:['#D4534A','#7F77DD','#1D9E75']},
+    {label:'Option 3 (솔직하게)',key:'honest',cols:['방어적 반응','대화 지속','관계 회복'],vals:[sim.honest?.defensive_reaction,sim.honest?.conversation_continue,sim.honest?.relationship_recovery],barCols:['#D4534A','#7F77DD','#1D9E75']}
+  ];
+  document.getElementById('sim-wrap').innerHTML=simRows.map(row=>`
+    <div class="sim-row">
+      <div class="sim-scenario">${row.label}</div>
+      <div class="sim-bars">${row.cols.map((col,ci)=>`
+        <div class="sim-bar-row">
+          <span style="width:60px;flex-shrink:0">${col}</span>
+          <div class="sim-bw"><div class="sim-bb" style="width:${row.vals[ci]||0}%;background:${row.barCols[ci]}"></div></div>
+          <span style="width:28px;text-align:right;color:#888;font-size:10px">${row.vals[ci]||0}%</span>
+        </div>`).join('')}
+      </div>
+    </div>`).join('<hr style="border:none;border-top:1px solid #141418;margin:.4rem 0">');
+
+  // Insight
+  const ins=data.insight||{};
+  document.getElementById('insight-wrap').innerHTML=`
+    <div style="margin-bottom:.75rem">
+      <div style="font-size:10px;color:#1A5C38;letter-spacing:.5px;text-transform:uppercase;margin-bottom:.4rem">감지된 패턴</div>
+      <div style="font-size:13px;color:#A8A49C;line-height:1.65;padding:.65rem .9rem;background:#061209;border-radius:6px;border-left:2px solid #1D9E75">${ins.pattern||''}</div>
+    </div>
+    <div style="margin-bottom:.75rem">
+      <div style="font-size:10px;color:#5C3A1A;letter-spacing:.5px;text-transform:uppercase;margin-bottom:.4rem">억압된 욕구 추정 (Lost Self)</div>
+      <div style="font-size:13px;color:#C8A070;line-height:1.65;padding:.65rem .9rem;background:#100A00;border-radius:6px;border-left:2px solid #D4810A">${ins.lost_self||''}</div>
+    </div>
+    <div>
+      <div style="font-size:10px;color:#3A3478;letter-spacing:.5px;text-transform:uppercase;margin-bottom:.4rem">오늘 추천 행동</div>
+      <div style="font-size:13px;color:#9A97DD;line-height:1.65;padding:.65rem .9rem;background:#0D0B1C;border-radius:6px;border-left:2px solid #7F77DD">${ins.recommendation||''}</div>
+    </div>`;
+
+  panel.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function escQ(s){return (s||'').replace(/'/g,"\\'").replace(/\n/g,' ');}
+
+function copyMsg(idx,msg){
+  navigator.clipboard.writeText(msg).then(()=>{
+    const btn=document.querySelector(`#rw-${idx} .copy-btn`);
+    if(btn){btn.textContent='복사됨';btn.classList.add('copied');setTimeout(()=>{btn.textContent='복사';btn.classList.remove('copied');},2000);}
+  });
+}
+
+function addHistory(msg,goal,data){
+  analysisHistory.unshift({msg:msg.slice(0,40)+(msg.length>40?'...':''),goal,risk:data.analysis?.relationship_risk,ts:new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'})});
+  if(analysisHistory.length>5)analysisHistory.pop();
+  renderHistory();
+}
+
+function renderHistory(){
+  const card=document.getElementById('history-card');
+  if(analysisHistory.length===0){card.style.display='none';return;}
+  card.style.display='block';
+  const riskColor=r=>r>70?'#D4534A':r>40?'#D4810A':'#1D9E75';
+  document.getElementById('history-list').innerHTML=analysisHistory.map((h,i)=>`
+    <div class="history-item" onclick="restoreHistory(${i})">
+      <div class="hist-dot" style="background:${riskColor(h.risk)}"></div>
+      <div style="flex:1">
+        <div class="hist-txt">"${h.msg}"</div>
+        <div class="hist-goal">목표: ${h.goal} · 위험도: ${h.risk}% · ${h.ts}</div>
+      </div>
+    </div>`).join('');
+}
+
+function restoreHistory(i){
+  const h=analysisHistory[i];
+  document.getElementById('msg-input').value=h.msg;
+  document.querySelectorAll('.goal-btn').forEach(b=>{
+    b.classList.toggle('active',b.dataset.goal===h.goal);
+    if(b.dataset.goal===h.goal)currentGoal=h.goal;
+  });
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+</script>
+</body>
+</html>
